@@ -15,8 +15,6 @@
 * NOTE! - It's very important to use pullups on the SDA & SCL lines! More so than with the Wire lib.
 *
 *
-* For
-*
 *
 * TODO:
 * - Reenable the random read function from TinyWireM (I don't really understand how it works and what it is for)
@@ -35,6 +33,20 @@
 #ifndef tiny_twi_h
 #define tiny_twi_h
 	#include <inttypes.h>
+	
+	//********** Master Error Codes **********//
+	// Note these have been renumbered from the Atmel Apps Note. Most likely errors are now
+	//		lowest numbers so they're easily recognized as LED flashes.
+	#define USI_TWI_NO_DATA             0x08  // Transmission buffer is empty
+	#define USI_TWI_DATA_OUT_OF_BOUND   0x09  // Transmission buffer is outside SRAM space
+	#define USI_TWI_UE_START_CON        0x07  // Unexpected Start Condition
+	#define USI_TWI_UE_STOP_CON         0x06  // Unexpected Stop Condition
+	#define USI_TWI_UE_DATA_COL         0x05  // Unexpected Data Collision (arbitration)
+	#define USI_TWI_NO_ACK_ON_DATA      0x02  // The slave did not acknowledge  all data
+	#define USI_TWI_NO_ACK_ON_ADDRESS   0x01  // The slave did not acknowledge  the address
+	#define USI_TWI_MISSING_START_CON   0x03  // Generated Start Condition not detected on bus
+	#define USI_TWI_MISSING_STOP_CON    0x04  // Generated Stop Condition not detected on bus
+	#define USI_TWI_BAD_MEM_READ	    0x0A  // Error during external memory read
 
 	//********** Class Definition **********//
 	class TinyTwi

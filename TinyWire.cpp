@@ -95,7 +95,13 @@
 
 	uint8_t TinyTwi::requestFrom(uint8_t slaveAddr, uint8_t numBytes)
 	{
-		Twi_master_requestFrom(slaveAddr, numBytes);
+		uint8_t temp;
+		temp = Twi_master_requestFrom(slaveAddr, numBytes);
+		if(temp_master_mode){
+			temp_master_mode = false;
+			begin(slave_addr);
+		}
+		return temp;
 	}
 
 	// behind the scenes function that is called when data is received

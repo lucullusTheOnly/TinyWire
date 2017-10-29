@@ -1,7 +1,6 @@
 # TinyWire
 Composite Master and Slave I2C library for Atmels ATTiny microcontrollers
-
-Wrapperclass for the new composed TinyWire library for I2C communication on ATTiny's
+Class for the new composed TinyWire library for I2C communication on ATTiny's
 The complete library is based on the librarys TinyWireM and TinyWireS, which were originally posted by
 BroHogan and then modified by jkl. I recomposed their code to unite slave and master functionality similar
 to the behavior of the Wire library on an Arduino. The TinyWireM library is available on https://github.com/adafruit/TinyWireM

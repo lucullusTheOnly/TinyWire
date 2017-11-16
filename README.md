@@ -9,6 +9,7 @@ I hope I've given all people the right credit for their work.
 
 ## Notes
  * It is very important to use pullup resistors for both lines (e.g. 2 kOhm)
+ * The slave part receives also at the general call address 0 (request for sending to master with this address are not possible in this protocol)
  * The user function callbacks for slave receiving and request are called from ISRs, so they shouldn't be to long. Also I'm not sure, if it is save to use master functions inside of it.
  * The library now watches the bus and tracks, if it is busy. With this it only start a master send operation, if the bus is free. Otherwise it returns the corresponding error
  * For detecting Stop Conditions the library uses the PinChangeInterrupt on SDA, so you have to change the library, if you want to use it. (There is a Stop Condition flag in the USISR register, but it isn't connected to an interrupt and it is not certain, when this bit is being triggered. So I used this workaround.)

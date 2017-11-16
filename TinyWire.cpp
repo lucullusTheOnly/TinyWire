@@ -2,7 +2,7 @@
 *
 *
 * File              TinyWire.cpp
-* Date              Saturday, 10/29/17
+* Date              Saturday, 11/16/17
 * Composed by 		lucullus
 *
 *
@@ -126,10 +126,10 @@
 	  user_onRequest();
 	}
 
-	/*void TinyTwi::onReceive( void (*function)(int) )
+	void TinyTwi::onReceive( void (*function)(int) )
 	{
 		user_onReceive = function;
-	}*/
+	}
 
     void TinyTwi::onRequest( void (*function)(void) )
     {

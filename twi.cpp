@@ -2,7 +2,7 @@
 *
 *
 * File              twi.cpp
-* Date              Saturday, 10/29/17
+* Date              Saturday, 11/16/17
 * Composed by 		lucullus
 *
 *
@@ -60,6 +60,9 @@ union  USI_TWI_state
 
 static uint8_t                  slaveAddress;
 static volatile overflowState_t overflowState;
+static volatile bool twi_bus_busy = false;
+static volatile bool twi_master_mode = false;
+static volatile bool currently_receiving = false;
 
 // Receive ringbuffer with extra bytecounter, to give out the number of bytes without iterating through it
 static uint8_t          rxBuf[ TWI_RX_BUFFER_SIZE ];
@@ -278,7 +281,7 @@ bool USI_TWI_Start_Read_Write( unsigned char *msg, unsigned char msgSize)
 #endif
 
 #ifdef NOISE_TESTING                                // Test if any unexpected conditions have arrived prior to this execution.
-  if( USISR & 3(1<<USISIF) )
+  if( USISR &   (1<<USISIF) )
   {
     USI_TWI_state.errorState = USI_TWI_UE_START_CON;
     return (FALSE);
@@ -393,6 +396,8 @@ bool USI_TWI_Start_Read_Write( unsigned char *msg, unsigned char msgSize)
 void Twi_end(){
 	USICR &= 0b11001111; // disable USI
 	DDR_USI &= ~(( 1 << PORT_USI_SCL ) | ( 1 << PORT_USI_SDA )); // set SDA & SCL as input
+  twi_master_mode = false;
+  twi_bus_busy = false;
 }
 
 /* 
@@ -420,6 +425,8 @@ void Twi_attachSlaveTxEvent( void (*function)(void) )
 void Twi_slave_init(uint8_t slave_addr)
 {
   flushTwiBuffers( );
+  twi_master_mode = false;
+  twi_bus_busy = false;
 
   slaveAddress = slave_addr;
 
@@ -456,6 +463,11 @@ void Twi_slave_init(uint8_t slave_addr)
   // clear all interrupt flags and reset overflow counter
 
   USISR = ( 1 << USI_START_COND_INT ) | ( 1 << USIOIF ) | ( 1 << USIPF ) | ( 1 << USIDC );
+
+  GIMSK |= 1 << 5; // enable Pin Change Interrupt
+  GIFR  |= 1 << 5; // clear interrupt flag, by writing 1 to it
+  PCMSK |= 1 << 0; // enable pin change interrupt on PCINT0
+
 }
 
 
@@ -507,6 +519,9 @@ unsigned char USI_TWI_Get_State_Info( void )
 
 void Twi_master_init(void)
 {
+  twi_master_mode = true;
+  twi_bus_busy = false;
+
   slaveAddress = 0;
   PORT_USI |= (1<<PIN_USI_SDA);           // Enable pullup on SDA, to set high as released state.
   PORT_USI |= (1<<PIN_USI_SCL);           // Enable pullup on SCL, to set high as released state.
@@ -516,7 +531,7 @@ void Twi_master_init(void)
   
   
   USIDR    =  0xFF;                       // Preload dataregister with "released level" data.
-  USICR    =  (0<<USISIE)|(0<<USIOIE)|                            // Disable Interrupts.
+  USICR    =  (1<<USISIE)|(0<<USIOIE)|                            // Disable overfow interrupt, enable start condition interrupt for detecting bus busy
               (1<<USIWM1)|(0<<USIWM0)|                            // Set USI in Two-wire mode.
               (1<<USICS1)|(0<<USICS0)|(1<<USICLK)|                // Software stobe as counter clock source
               (0<<USITC);
@@ -556,6 +571,8 @@ uint8_t Twi_master_endTransmission()
 		j++;
 	}
 	
+  if(twi_bus_busy) {USI_TWI_state.errorState = USI_TWI_BUS_BUSY; return USI_TWI_state.errorState;}
+
 	if(USI_TWI_Start_Read_Write(tempbuf,j)) return 0;
 	else return USI_TWI_Get_State_Info();
 }
@@ -566,6 +583,7 @@ uint8_t Twi_master_requestFrom(uint8_t slave_addr, uint8_t numBytes)
 	bool transferOK= false;
 	numBytes++; // add extra byte to transmit header
 	tempbuf[0] = (slave_addr<<TWI_ADR_BITS) | USI_RCVE;   // setup address & Rcve bit
+  if(twi_bus_busy) {USI_TWI_state.errorState = USI_TWI_BUS_BUSY; return USI_TWI_state.errorState;}
 	transferOK = USI_TWI_Start_Read_Write(tempbuf,numBytes);
 
 	for(uint8_t i=0;i < TWI_RX_BUFFER_SIZE;i++){ // swap data from tempbuffer to rxBuffer
@@ -588,10 +606,7 @@ uint8_t Twi_master_requestFrom(uint8_t slave_addr, uint8_t numBytes)
 // Interrupt Routine, triggered when master sends start condition
 ISR( USI_START_VECTOR )
 {
-
-  // set default starting conditions for new TWI package
-  overflowState = USI_SLAVE_CHECK_ADDRESS;
-
+  twi_bus_busy = true;
   // set SDA as input
   DDR_USI &= ~( 1 << PORT_USI_SDA );
 
@@ -611,7 +626,7 @@ ISR( USI_START_VECTOR )
   if ( !( PIN_USI & ( 1 << PIN_USI_SDA ) ) )
   {
 
-    // a Stop Condition did not occur
+    // a Start Condition did occur
 
     USICR =
          // keep Start Condition Interrupt enabled to detect RESTART
@@ -625,10 +640,17 @@ ISR( USI_START_VECTOR )
          ( 1 << USICS1 ) | ( 0 << USICS0 ) | ( 0 << USICLK ) |
          // no toggle clock-port pin
          ( 0 << USITC );
+
+    if(currently_receiving){ // if we had received something, this is a RESTART condition and we have
+                             // to call the users receive callback
+      twi_onSlaveReceive(rxByteNum);
+      currently_receiving = false;
+    }
   }
-  else
+  /*else
   {
 
+    twi_bus_busy = false;
     // a Stop Condition did occur
     USICR =
          // enable Start Condition Interrupt
@@ -642,7 +664,7 @@ ISR( USI_START_VECTOR )
          ( 1 << USICS1 ) | ( 0 << USICS0 ) | ( 0 << USICLK ) |
          // no toggle clock-port pin
          ( 0 << USITC );
-  } // end if
+  } */// end if
 
   USISR =
        // clear interrupt flags - resetting the Start Condition Flag will
@@ -651,6 +673,9 @@ ISR( USI_START_VECTOR )
        ( 1 << USIPF ) |( 1 << USIDC ) |
        // set USI to sample 8 bits (count 16 external SCL pin toggles)
        ( 0x0 << USICNT0);
+
+  // set default starting conditions for new TWI package
+  overflowState = USI_SLAVE_CHECK_ADDRESS;
 
 } // end ISR( USI_START_VECTOR )
 
@@ -675,6 +700,7 @@ ISR( USI_OVERFLOW_VECTOR )
         }
         else
         {
+          currently_receiving = true;
           overflowState = USI_SLAVE_REQUEST_DATA;
         } // end if
         SET_USI_TO_SEND_ACK( );
@@ -746,5 +772,19 @@ ISR( USI_OVERFLOW_VECTOR )
   } // end switch
 
 } // end ISR( USI_OVERFLOW_VECTOR )
+
+// Interrupt Routine, triggered when SDA pin changes; for detecting Stop condition
+ISR( INT0_VECTOR )
+{
+  if((PIN_USI & (1 << PIN_USI_SDA)) && (PIN_USI & ( 1 << PIN_USI_SCL ))){
+    // stop condition occured
+    twi_bus_busy = false;
+    if(currently_receiving){ // If we are receiving bytes from a master, call user callback
+      if(rxByteNum>0) twi_onSlaveReceive(rxByteNum);  // check, if anything is in the rx buffer, because it is possible,
+                                                      // that the communication was interrupted by a stop condition
+      currently_receiving = false;
+    }
+  }
+}
 
 #endif

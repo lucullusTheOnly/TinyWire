@@ -2,7 +2,7 @@
 *
 *
 * File              twi.h
-* Date              Saturday, 10/29/17
+* Date              Saturday, 11/16/17
 * Composed by 		lucullus
 *
 * This library gives the functionality to provide a nearly full I2C communication with both master and slave mode
@@ -17,9 +17,6 @@
 *
 * TODO:
 * - Reenable the random read function from TinyWireM (I don't really understand how it works and what it is for)
-* - Calling an user event function on slave receive doesn't work right, because the end of data transmit is not
-*   reliable indicated by a Stop- or Restart-Condition (Sending from an Arduino Nano doesn't seem to trigger the
-*   interrupt)
 *
 *
 *  This library is free software; you can redistribute it and/or modify it under the
@@ -85,7 +82,7 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 
 // Defines error code generating
 //#define PARAM_VERIFICATION
-//#define NOISE_TESTING
+#define NOISE_TESTING         // Enables testing of unexpected events, including arbitration lost
 #define SIGNAL_VERIFY		// This should probably be on always.
 
 /****************************************************************************
@@ -109,7 +106,8 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 #define USI_TWI_NO_ACK_ON_ADDRESS   0x01  // The slave did not acknowledge  the address
 #define USI_TWI_MISSING_START_CON   0x03  // Generated Start Condition not detected on bus
 #define USI_TWI_MISSING_STOP_CON    0x04  // Generated Stop Condition not detected on bus
-#define USI_TWI_BAD_MEM_READ	    0x0A  // Error during external memory read
+#define USI_TWI_BAD_MEM_READ	      0x0A  // Error during external memory read
+#define USI_TWI_BUS_BUSY            0x0B  // Another Master is using the bus
 
 #define TRUE  1
 #define FALSE 0
@@ -143,6 +141,7 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 #  define USI_START_COND_INT  USISIF //was USICIF jjg
 #  define USI_START_VECTOR    USI_START_vect
 #  define USI_OVERFLOW_VECTOR USI_OVF_vect
+#  define INT0_VECTOR         PCINT0_vect
 #endif
 
 #if defined( __AVR_ATtiny26__ )

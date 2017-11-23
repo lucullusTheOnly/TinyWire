@@ -20,5 +20,5 @@ void onI2CRequest() {
 	// sends one byte with content 'b' to the master, regardless how many bytes he expects
 	// if the buffer is empty, but the master is still requesting, the slave aborts the communication
 	// (so it is not blocking)
-	TinWire.send('b');
+	TinyWire.send('b');
 }

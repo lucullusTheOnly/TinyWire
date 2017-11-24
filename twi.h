@@ -144,6 +144,8 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 #  define USI_START_COND_INT  USISIF //was USICIF jjg
 #  define USI_START_VECTOR    USI_START_vect
 #  define USI_OVERFLOW_VECTOR USI_OVF_vect
+#  define PIN_CHANGE_INTERRUPT_ENABLE PCIE
+#  define PIN_CHANGE_FLAG     PCIF
 #endif
 
 #if defined( __AVR_ATtiny26__ )

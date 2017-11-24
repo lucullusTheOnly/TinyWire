@@ -469,9 +469,9 @@ void Twi_slave_init(uint8_t slave_addr)
           ( 1 << USIDC ) |
           (0x0<< USICNT0);
 
-  GIMSK |= 1 << 5; // enable Pin Change Interrupt
-  GIFR  |= 1 << 5; // clear interrupt flag, by writing 1 to it
-  PCMSK |= 1 << 0; // enable pin change interrupt on PCINT0
+  GIMSK |= 1 << PIN_CHANGE_INTERRUPT_ENABLE; // enable Pin Change Interrupt
+  GIFR  |= 1 << PIN_CHANGE_FLAG; // clear interrupt flag, by writing 1 to it
+  PCMSK |= 1 << PIN_USI_SDA; // enable pin change interrupt on PCINT0
 }
 
 
@@ -613,7 +613,6 @@ uint8_t Twi_master_requestFrom(uint8_t slave_addr, uint8_t numBytes)
 ISR( USI_START_VECTOR )
 {
   twi_bus_busy = true;
-  PORTB |= 0b10;
   // set SDA as input
   DDR_USI &= ~( 1 << PORT_USI_SDA );
 
@@ -770,7 +769,6 @@ ISR( PCINT0_vect )
     _delay_us(7);
     if((PIN_USI & (1 << PIN_USI_SDA)) && (PIN_USI & ( 1 << PIN_USI_SCL ))){
       twi_bus_busy = false;
-      PORTB&=~(0b10);
       if(currently_receiving){ // If we are receiving bytes from a master, call user callback
         if(rxByteNum>0) twi_onSlaveReceive(rxByteNum);  // check, if anything is in the rx buffer, because it is possible,
                                                         // that the communication was interrupted by a stop condition

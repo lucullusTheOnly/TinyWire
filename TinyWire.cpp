@@ -2,7 +2,7 @@
 *
 *
 * File              TinyWire.cpp
-* Date              Saturday, 11/16/17
+* Date              Saturday, 10/29/17
 * Composed by 		lucullus
 *
 *
@@ -75,16 +75,18 @@
 
 	void TinyTwi::beginTransmission(uint8_t slaveAddr)
 	{
-		if(!master_mode){
-			temp_master_mode = true;
-			Twi_master_init();
-		}
 		Twi_master_beginTransmission(slaveAddr);
 	}
 
 	uint8_t TinyTwi::endTransmission()
 	{
 		uint8_t temp;
+
+		if(!master_mode){
+			temp_master_mode = true;
+			Twi_master_init();
+		}
+
 		temp = Twi_master_endTransmission();
 		if(temp_master_mode){
 			temp_master_mode = false;
@@ -96,6 +98,10 @@
 	uint8_t TinyTwi::requestFrom(uint8_t slaveAddr, uint8_t numBytes)
 	{
 		uint8_t temp;
+		if(!master_mode){
+			temp_master_mode = true;
+			Twi_master_init();
+		}
 		temp = Twi_master_requestFrom(slaveAddr, numBytes);
 		if(temp_master_mode){
 			temp_master_mode = false;
@@ -126,10 +132,10 @@
 	  user_onRequest();
 	}
 
-	void TinyTwi::onReceive( void (*function)(int) )
+	/*void TinyTwi::onReceive( void (*function)(int) )
 	{
 		user_onReceive = function;
-	}
+	}*/
 
     void TinyTwi::onRequest( void (*function)(void) )
     {

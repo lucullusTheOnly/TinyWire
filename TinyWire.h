@@ -2,7 +2,7 @@
 *
 *
 * File              TinyWire.h
-* Date              Saturday, 11/16/17
+* Date              Saturday, 10/29/17
 * Composed by 		lucullus
 *
 *
@@ -13,18 +13,14 @@
 *
 *
 * NOTE! - It's very important to use pullups on the SDA & SCL lines! More so than with the Wire lib.
-*		- The onReceive and onRequest user callback functions are called from an ISR, so don't make them to long
-*		- The onReceive event is triggered by an if-condition in the PinChange-ISR for SDA line, which is also used
-*		  to watch the bus for other masters using it. It checks for a Stop Condition to occur. If a RESTART Condition
-*		  occurs, the user callback function is called rom the StartCondition-ISR.
+*
 *
 *
 * TODO:
 * - Reenable the random read function from TinyWireM (I don't really understand how it works and what it is for)
-* - Test, if it is save to use Master functions inside the slave receive callback (I'm not sure about this, because
-*   it is called from the PinChange-ISR or the StartCondition-ISR)
-* - Provide easy functionality for enabling the user to use the PinChangeInterrupt on other pins simultaneously
-*   to this library
+* - Calling an user event function on slave receive doesn't work right, because the end of data transmit is not
+*   reliable indicated by a Stop- or Restart-Condition (Sending from an Arduino Nano doesn't seem to trigger the
+*   interrupt)
 *
 *  This library is free software; you can redistribute it and/or modify it under the
 *  terms of the GNU General Public License as published by the Free Software
@@ -51,7 +47,6 @@
 	#define USI_TWI_MISSING_START_CON   0x03  // Generated Start Condition not detected on bus
 	#define USI_TWI_MISSING_STOP_CON    0x04  // Generated Stop Condition not detected on bus
 	#define USI_TWI_BAD_MEM_READ	    0x0A  // Error during external memory read
-	#define USI_TWI_BUS_BUSY            0x0B  // Another Master is using the bus
 
 	//********** Class Definition **********//
 	class TinyTwi
@@ -77,7 +72,7 @@
 		uint8_t requestFrom(uint8_t slaveAddr, uint8_t numBytes);
 		void end();
 		
-		void onReceive( void (*)(int) );
+		//void onReceive( void (*)(int) ); // doesn't work currently
     	void onRequest( void (*)(void) );
 	};
 

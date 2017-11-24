@@ -2,7 +2,7 @@
 *
 *
 * File              twi.cpp
-* Date              Saturday, 11/16/17
+* Date              Saturday, 10/29/17
 * Composed by 		lucullus
 *
 *
@@ -281,11 +281,11 @@ bool USI_TWI_Start_Read_Write( unsigned char *msg, unsigned char msgSize)
 #endif
 
 #ifdef NOISE_TESTING                                // Test if any unexpected conditions have arrived prior to this execution.
-  if( USISR &   (1<<USISIF) )
+  /*if( USISR & (1<<USISIF) ) // seems to always occur. Even, if nothing bad happened. Currently disabled
   {
     USI_TWI_state.errorState = USI_TWI_UE_START_CON;
     return (FALSE);
-  }
+  }*/
   if( USISR & (1<<USIPF) )
   {
     USI_TWI_state.errorState = USI_TWI_UE_STOP_CON;
@@ -426,9 +426,10 @@ void Twi_slave_init(uint8_t slave_addr)
 {
   flushTwiBuffers( );
   twi_master_mode = false;
-  twi_bus_busy = false;
 
   slaveAddress = slave_addr;
+
+  USIDR    =  0xFF;                       // Preload dataregister with "released level" data.
 
   // In Two Wire mode (USIWM1, USIWM0 = 1X), the slave USI will pull SCL
   // low when a start condition is detected or a counter overflow (only
@@ -462,12 +463,15 @@ void Twi_slave_init(uint8_t slave_addr)
 
   // clear all interrupt flags and reset overflow counter
 
-  USISR = ( 1 << USI_START_COND_INT ) | ( 1 << USIOIF ) | ( 1 << USIPF ) | ( 1 << USIDC );
+  USISR = ( 1 << USI_START_COND_INT ) |
+          ( 1 << USIOIF ) |
+          ( 1 << USIPF ) |
+          ( 1 << USIDC ) |
+          (0x0<< USICNT0);
 
   GIMSK |= 1 << 5; // enable Pin Change Interrupt
   GIFR  |= 1 << 5; // clear interrupt flag, by writing 1 to it
   PCMSK |= 1 << 0; // enable pin change interrupt on PCINT0
-
 }
 
 
@@ -520,23 +524,24 @@ unsigned char USI_TWI_Get_State_Info( void )
 void Twi_master_init(void)
 {
   twi_master_mode = true;
-  twi_bus_busy = false;
 
+  GIMSK &= ~(1 << 5);
   slaveAddress = 0;
-  PORT_USI |= (1<<PIN_USI_SDA);           // Enable pullup on SDA, to set high as released state.
-  PORT_USI |= (1<<PIN_USI_SCL);           // Enable pullup on SCL, to set high as released state.
-  
-  DDR_USI |= ( 1 << PORT_USI_SDA );
-  DDR_USI |= ( 1 << PORT_USI_SCL );
-  
-  
+
   USIDR    =  0xFF;                       // Preload dataregister with "released level" data.
-  USICR    =  (1<<USISIE)|(0<<USIOIE)|                            // Disable overfow interrupt, enable start condition interrupt for detecting bus busy
+  USICR    =  (0<<USISIE)|(0<<USIOIE)|                            // Disable Interrupts.
               (1<<USIWM1)|(0<<USIWM0)|                            // Set USI in Two-wire mode.
               (1<<USICS1)|(0<<USICS0)|(1<<USICLK)|                // Software stobe as counter clock source
               (0<<USITC);
+
   USISR   =   (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      // Clear flags,
               (0x0<<USICNT0);                                     // and reset counter.
+
+  PORT_USI |= (1<<PIN_USI_SDA);           // Enable pullup on SDA, to set high as released state.
+  PORT_USI |= (1<<PORT_USI_SCL);           // Enable pullup on SCL, to set high as released state.
+
+  DDR_USI |= ( 1 << PORT_USI_SDA );
+  DDR_USI |= ( 1 << PORT_USI_SCL );
 }
 
 void Twi_master_beginTransmission(uint8_t slave_addr)
@@ -564,15 +569,16 @@ uint8_t Twi_master_endTransmission()
 {
 	uint8_t tempbuf[TWI_TX_BUFFER_SIZE];
 	uint8_t j=0;
-	// copy tx buffer to tempory buffer
+  bool ok=false;
+  // copy tx buffer to tempory buffer
 	while( txHead != txTail ){
 		txTail = ( txTail +1 ) & TWI_TX_BUFFER_MASK;
 		tempbuf[j] = txBuf[ txTail ];
 		j++;
 	}
-	
-  if(twi_bus_busy) {USI_TWI_state.errorState = USI_TWI_BUS_BUSY; return USI_TWI_state.errorState;}
 
+  if(twi_bus_busy) {USI_TWI_state.errorState = USI_TWI_BUS_BUSY; return USI_TWI_state.errorState;}
+	
 	if(USI_TWI_Start_Read_Write(tempbuf,j)) return 0;
 	else return USI_TWI_Get_State_Info();
 }
@@ -607,6 +613,7 @@ uint8_t Twi_master_requestFrom(uint8_t slave_addr, uint8_t numBytes)
 ISR( USI_START_VECTOR )
 {
   twi_bus_busy = true;
+  PORTB |= 0b10;
   // set SDA as input
   DDR_USI &= ~( 1 << PORT_USI_SDA );
 
@@ -626,7 +633,7 @@ ISR( USI_START_VECTOR )
   if ( !( PIN_USI & ( 1 << PIN_USI_SDA ) ) )
   {
 
-    // a Start Condition did occur
+    // a Stop Condition did not occur
 
     USICR =
          // keep Start Condition Interrupt enabled to detect RESTART
@@ -647,24 +654,6 @@ ISR( USI_START_VECTOR )
       currently_receiving = false;
     }
   }
-  /*else
-  {
-
-    twi_bus_busy = false;
-    // a Stop Condition did occur
-    USICR =
-         // enable Start Condition Interrupt
-         ( 1 << USISIE ) |
-         // disable Overflow Interrupt
-         ( 0 << USIOIE ) |
-         // set USI in Two-wire mode, no USI Counter overflow hold
-         ( 1 << USIWM1 ) | ( 0 << USIWM0 ) |
-         // Shift Register Clock Source = external, positive edge
-         // 4-Bit Counter Source = external, both edges
-         ( 1 << USICS1 ) | ( 0 << USICS0 ) | ( 0 << USICLK ) |
-         // no toggle clock-port pin
-         ( 0 << USITC );
-  } */// end if
 
   USISR =
        // clear interrupt flags - resetting the Start Condition Flag will
@@ -673,10 +662,10 @@ ISR( USI_START_VECTOR )
        ( 1 << USIPF ) |( 1 << USIDC ) |
        // set USI to sample 8 bits (count 16 external SCL pin toggles)
        ( 0x0 << USICNT0);
-
+  
   // set default starting conditions for new TWI package
   overflowState = USI_SLAVE_CHECK_ADDRESS;
-
+  
 } // end ISR( USI_START_VECTOR )
 
 
@@ -684,14 +673,12 @@ ISR( USI_START_VECTOR )
 // Interrupt Routine, triggered when one byte was transmitted
 ISR( USI_OVERFLOW_VECTOR )
 {
-
   switch ( overflowState )
   {
 
     // Address mode: check address and send ACK (and next USI_SLAVE_SEND_DATA) if OK,
     // else reset USI
     case USI_SLAVE_CHECK_ADDRESS:
-      // also receive on general call address 0 (here only reading from master is possible)
       if ( ( USIDR == 0 ) || ( ( USIDR >> 1 ) == slaveAddress) )
       {
           if ( USIDR & 0x01 )
@@ -774,16 +761,21 @@ ISR( USI_OVERFLOW_VECTOR )
 
 } // end ISR( USI_OVERFLOW_VECTOR )
 
+
 // Interrupt Routine, triggered when SDA pin changes; for detecting Stop condition
-ISR( INT0_VECTOR )
+ISR( PCINT0_vect )
 {
   if((PIN_USI & (1 << PIN_USI_SDA)) && (PIN_USI & ( 1 << PIN_USI_SCL ))){
     // stop condition occured
-    twi_bus_busy = false;
-    if(currently_receiving){ // If we are receiving bytes from a master, call user callback
-      if(rxByteNum>0) twi_onSlaveReceive(rxByteNum);  // check, if anything is in the rx buffer, because it is possible,
-                                                      // that the communication was interrupted by a stop condition
-      currently_receiving = false;
+    _delay_us(7);
+    if((PIN_USI & (1 << PIN_USI_SDA)) && (PIN_USI & ( 1 << PIN_USI_SCL ))){
+      twi_bus_busy = false;
+      PORTB&=~(0b10);
+      if(currently_receiving){ // If we are receiving bytes from a master, call user callback
+        if(rxByteNum>0) twi_onSlaveReceive(rxByteNum);  // check, if anything is in the rx buffer, because it is possible,
+                                                        // that the communication was interrupted by a stop condition
+        currently_receiving = false;
+      }
     }
   }
 }

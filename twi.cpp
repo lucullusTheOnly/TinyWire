@@ -58,6 +58,12 @@ union  USI_TWI_state
   }; 
 }   USI_TWI_state;
 
+struct USI_TWI_MASTER_TRANSFER_RESULT
+{
+  unsigned char result;
+  unsigned char error_code;
+};
+
 static uint8_t                  slaveAddress;
 static volatile overflowState_t overflowState;
 static volatile bool twi_bus_busy = false;
@@ -171,8 +177,10 @@ static void SET_USI_TO_READ_DATA( )
  Data to be sent has to be placed into the USIDR prior to calling
  this function. Data read, will be return'ed from the function.
 ---------------------------------------------------------------*/
-unsigned char USI_TWI_Master_Transfer( unsigned char temp )
+USI_TWI_MASTER_TRANSFER_RESULT USI_TWI_Master_Transfer( unsigned char temp, bool ack)
 {
+  USI_TWI_MASTER_TRANSFER_RESULT result;
+  result.error_code = 0;
   USISR = temp;                                     // Set USISR according to temp.
                                                     // Prepare clocking.
   temp  =  (0<<USISIE)|(0<<USIOIE)|                 // Interrupts disabled
@@ -186,6 +194,14 @@ unsigned char USI_TWI_Master_Transfer( unsigned char temp )
     while( !(PIN_USI & (1<<PIN_USI_SCL)) );// Wait for SCL to go high.
 	_delay_us(T4_TWI);
     USICR = temp;                          // Generate negative SCL edge.
+    #ifdef BUS_ARBITRATION
+      if(!ack && (USISR & (1<<USIDC))) { // Check data collision bit
+        Twi_slave_init(slaveAddress);
+        result.result = 0;
+        result.error_code = USI_TWI_ARBITRATION_LOST;
+        return result;
+      }
+    #endif
   }while( !(USISR & (1<<USIOIF)) );        // Check for transfer complete.
   
 	_delay_us(T2_TWI);
@@ -193,7 +209,9 @@ unsigned char USI_TWI_Master_Transfer( unsigned char temp )
   USIDR = 0xFF;                            // Release SDA.
   DDR_USI |= (1<<PIN_USI_SDA);             // Enable SDA as output.
 
-  return temp;                             // Return the data from the USIDR
+  result.result = temp;
+
+  return result;                             // Return the data from the USIDR
 }
 
 /*---------------------------------------------------------------
@@ -323,11 +341,16 @@ bool USI_TWI_Start_Read_Write( unsigned char *msg, unsigned char msgSize)
       /* Write a byte */
       PORT_USI &= ~(1<<PIN_USI_SCL);                // Pull SCL LOW.
       USIDR     = *(msg++);                        // Setup data.
-      USI_TWI_Master_Transfer( tempUSISR_8bit );    // Send 8 bits on bus.
-      
+      unsigned char error_code = USI_TWI_Master_Transfer( tempUSISR_8bit, false ).error_code; // Send 8 bits on bus.
+      if(error_code!=0){ // Check if arbitration is lost
+        USI_TWI_state.errorState = error_code;
+        return (FALSE);
+      }
       /* Clock and verify (N)ACK from slave */
       DDR_USI  &= ~(1<<PIN_USI_SDA);                // Enable SDA as input.
-      if( USI_TWI_Master_Transfer( tempUSISR_1bit ) & (1<<TWI_NACK_BIT) ) 
+      USI_TWI_MASTER_TRANSFER_RESULT temp_result = USI_TWI_Master_Transfer( tempUSISR_1bit, true );
+      // No Check for Arbitration Lost, since the arbitration cannot be lost on (N)ACK
+      if( temp_result.result & (1<<TWI_NACK_BIT) ) 
       {
         if ( USI_TWI_state.addressMode )
           USI_TWI_state.errorState = USI_TWI_NO_ACK_ON_ADDRESS;
@@ -360,7 +383,12 @@ bool USI_TWI_Start_Read_Write( unsigned char *msg, unsigned char msgSize)
     {
       /* Read a data byte */
       DDR_USI   &= ~(1<<PIN_USI_SDA);               // Enable SDA as input.
-      *(msg++)  = USI_TWI_Master_Transfer( tempUSISR_8bit );
+      USI_TWI_MASTER_TRANSFER_RESULT temp_result = USI_TWI_Master_Transfer( tempUSISR_8bit,false );
+      if( temp_result.error_code != 0){ // Check for Arbitration Lost
+        USI_TWI_state.errorState = temp_result.error_code;
+        return (FALSE);
+      }
+      *(msg++)  = temp_result.result;
 
       /* Prepare to generate ACK (or NACK in case of End Of Transmission) */
       if( msgSize == 1)                            // If transmission of last byte was performed.
@@ -371,7 +399,8 @@ bool USI_TWI_Start_Read_Write( unsigned char *msg, unsigned char msgSize)
       {
         USIDR = 0x00;                              // Load ACK. Set data register bit 7 (output for SDA) low.
       }
-      USI_TWI_Master_Transfer( tempUSISR_1bit );   // Generate ACK/NACK.
+      USI_TWI_Master_Transfer( tempUSISR_1bit,true ); // Generate ACK/NACK.
+      // No Check for Arbitration Lost, since the arbitration cannot be lost on (N)ACK
     }
   }while( --msgSize) ;                             // Until all data sent/received.
   
@@ -471,7 +500,7 @@ void Twi_slave_init(uint8_t slave_addr)
 
   GIMSK |= 1 << PIN_CHANGE_INTERRUPT_ENABLE; // enable Pin Change Interrupt
   GIFR  |= 1 << PIN_CHANGE_FLAG; // clear interrupt flag, by writing 1 to it
-  PCMSK |= 1 << PIN_USI_SDA; // enable pin change interrupt on PCINT0
+  PCMSK |= 1 << PIN_USI_SDA; // enable pin change interrupt on PCINT0 (SDA line)
 }
 
 

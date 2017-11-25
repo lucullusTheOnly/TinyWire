@@ -47,6 +47,8 @@
 	#define USI_TWI_MISSING_START_CON   0x03  // Generated Start Condition not detected on bus
 	#define USI_TWI_MISSING_STOP_CON    0x04  // Generated Stop Condition not detected on bus
 	#define USI_TWI_BAD_MEM_READ	    0x0A  // Error during external memory read
+	#define USI_TWI_BUS_BUSY            0x0B  // Another Master is using the bus
+	#define USI_TWI_ARBITRATION_LOST    0x0C  // The master lost the arbitration due to the transmission of another master
 
 	//********** Class Definition **********//
 	class TinyTwi

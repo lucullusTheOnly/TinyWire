@@ -86,6 +86,7 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 // Defines error code generating
 //#define PARAM_VERIFICATION
 #define NOISE_TESTING
+#define BUS_ARBITRATION
 #define SIGNAL_VERIFY		// This should probably be on always.
 
 /****************************************************************************
@@ -104,13 +105,14 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 #define USI_TWI_DATA_OUT_OF_BOUND   0x09  // Transmission buffer is outside SRAM space
 #define USI_TWI_UE_START_CON        0x07  // Unexpected Start Condition
 #define USI_TWI_UE_STOP_CON         0x06  // Unexpected Stop Condition
-#define USI_TWI_UE_DATA_COL         0x05  // Unexpected Data Collision (arbitration)
+#define USI_TWI_UE_DATA_COL         0x05  // Unexpected Data Collision
 #define USI_TWI_NO_ACK_ON_DATA      0x02  // The slave did not acknowledge  all data
 #define USI_TWI_NO_ACK_ON_ADDRESS   0x01  // The slave did not acknowledge  the address
 #define USI_TWI_MISSING_START_CON   0x03  // Generated Start Condition not detected on bus
 #define USI_TWI_MISSING_STOP_CON    0x04  // Generated Stop Condition not detected on bus
 #define USI_TWI_BAD_MEM_READ	      0x0A  // Error during external memory read
 #define USI_TWI_BUS_BUSY            0x0B  // Another Master is using the bus
+#define USI_TWI_ARBITRATION_LOST    0x0C  // The master lost the arbitration due to the transmission of another master
 
 #define TRUE  1
 #define FALSE 0

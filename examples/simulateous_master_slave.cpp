@@ -20,6 +20,8 @@ void setup() {
 	
 	// config TinyWire library for I2C slave functionality
 	TinyWire.begin( own_address );
+	// set slave receive callback
+	TinyWire.onReceive( onI2CReceive );
 }
 
 void loop() {
@@ -40,6 +42,9 @@ void loop() {
 		// reset error LED after a short delay
 		digitalWrite(error_led_pin, LOW);
 	}
+}
+
+void onI2CReceive(int howMany){
 	// loops, until all received bytes are read
 	while(TinyWire.available()>0){
 		// toggles the led everytime, when an 'a' is received

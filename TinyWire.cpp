@@ -132,10 +132,10 @@
 	  user_onRequest();
 	}
 
-	/*void TinyTwi::onReceive( void (*function)(int) )
+	void TinyTwi::onReceive( void (*function)(int) )
 	{
 		user_onReceive = function;
-	}*/
+	}
 
     void TinyTwi::onRequest( void (*function)(void) )
     {

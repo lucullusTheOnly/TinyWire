@@ -74,7 +74,7 @@
 		uint8_t requestFrom(uint8_t slaveAddr, uint8_t numBytes);
 		void end();
 		
-		//void onReceive( void (*)(int) ); // doesn't work currently
+		void onReceive( void (*)(int) ); // doesn't work currently
     	void onRequest( void (*)(void) );
 	};
 

@@ -17,9 +17,6 @@
 *
 * TODO:
 * - Reenable the random read function from TinyWireM (I don't really understand how it works and what it is for)
-* - Calling an user event function on slave receive doesn't work right, because the end of data transmit is not
-*   reliable indicated by a Stop- or Restart-Condition (Sending from an Arduino Nano doesn't seem to trigger the
-*   interrupt)
 *
 *
 *  This library is free software; you can redistribute it and/or modify it under the

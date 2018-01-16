@@ -17,5 +17,5 @@ I hope I've given all people the right credit for their work.
  * using the library as a pure master can block the bus for other masters. I didn't find a solution for this. You can either initialize the library as slave and use the simultaneous master/slave functionality or you can disable the the library with the end() function
 
 ## TODO
- * Add PinChange Interrupt Vector, Enable bit and Flag bit in device dependent definitions in twi.h for all other devices than ATTiny24/45/85
+ * Add PinChange Interrupt Vector, Enable bit and Flag bit in device dependent definitions in twi.h for all other devices than ATTiny25/45/85
  * After an Arbitration Lost, the library has to check, if it was addressed by another master. If so, it has to receive the masters message.

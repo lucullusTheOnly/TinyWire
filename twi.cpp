@@ -803,6 +803,7 @@ ISR( PCINT0_vect )
                                                         // that the communication was interrupted by a stop condition
         currently_receiving = false;
       }
+      USISR |= 1<<USIPF; // resetting stop condition flag
     }
   }
 }

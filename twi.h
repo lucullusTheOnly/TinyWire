@@ -82,7 +82,7 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 
 // Defines error code generating
 //#define PARAM_VERIFICATION
-#define NOISE_TESTING
+//#define NOISE_TESTING
 #define BUS_ARBITRATION
 #define SIGNAL_VERIFY		// This should probably be on always.
 

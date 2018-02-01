@@ -64,8 +64,10 @@
 		void begin();
 		void begin(uint8_t I2C_SLAVE_ADDR);
 		uint8_t read();
+		uint8_t receive();
 		uint8_t available();
 		void send(uint8_t data);
+		void write(uint8_t data);
 		void beginTransmission(uint8_t slaveAddr);
 		uint8_t endTransmission();
 		uint8_t requestFrom(uint8_t slaveAddr, uint8_t numBytes);

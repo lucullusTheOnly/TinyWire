@@ -65,8 +65,16 @@
 		}
 	}
 
+	void TinyTwi::write(uint8_t data){
+		send(data);
+	}
+
 	uint8_t TinyTwi::read(){
 		return Twi_receive();
+	}
+
+	uint8_t TinyTwi::receive(){
+		return read();
 	}
 
 	uint8_t TinyTwi::available(){

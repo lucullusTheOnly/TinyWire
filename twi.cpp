@@ -504,7 +504,7 @@ void Twi_slave_init(uint8_t slave_addr)
 }
 
 
-void Twi_slave_send(uint8_t data)
+uint8_t Twi_slave_send(uint8_t data)
 {
   uint8_t tmphead;
 
@@ -512,13 +512,14 @@ void Twi_slave_send(uint8_t data)
   tmphead = ( txHead + 1 ) & TWI_TX_BUFFER_MASK;
 
   // wait for free space in buffer
-  while ( tmphead == txTail );
+  if(tmphead == txTail) return 0;
 
   // store data in buffer
   txBuf[ tmphead ] = data;
 
   // store new index
   txHead = tmphead;
+  return 1;
 }
 
 
@@ -584,14 +585,16 @@ void Twi_master_beginTransmission(uint8_t slave_addr)
 	txBuf[ txHead ] = (slave_addr<<TWI_ADR_BITS) | USI_SEND;
 }
 
-void Twi_master_send(uint8_t data)
+uint8_t Twi_master_send(uint8_t data)
 {
 	uint8_t temphead = (txHead + 1) & TWI_TX_BUFFER_MASK;
-	if( temphead == txTail ) return; // return if buffer is full
+	if( temphead == txTail ) return 0; // return 0 if buffer is full
 
 	txBuf[temphead] = data;
 
 	txHead = temphead;
+
+  return 1;
 }
 
 uint8_t Twi_master_endTransmission()
@@ -734,6 +737,8 @@ ISR( USI_OVERFLOW_VECTOR )
       {
         // if NACK, the master does not want more data
         SET_USI_TO_TWI_START_CONDITION_MODE( );
+        // clear TX buffer, because the rest of data in it is unwanted by the master
+        txHead = txTail = 0;
         return;
       }
       // from here we just drop straight into USI_SLAVE_SEND_DATA if the

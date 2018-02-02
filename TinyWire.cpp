@@ -57,16 +57,16 @@
 		Twi_slave_init(I2C_SLAVE_ADDR);
 	}
 
-	void TinyTwi::send(uint8_t data){
+	uint8_t TinyTwi::send(uint8_t data){
 		if(master_mode || temp_master_mode){
-			Twi_master_send(data);
+			return Twi_master_send(data);
 		} else{
-			Twi_slave_send(data);
+			return Twi_slave_send(data);
 		}
 	}
 
-	void TinyTwi::write(uint8_t data){
-		send(data);
+	uint8_t TinyTwi::write(uint8_t data){
+		return send(data);
 	}
 
 	uint8_t TinyTwi::read(){

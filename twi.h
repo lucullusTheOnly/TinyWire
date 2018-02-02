@@ -36,13 +36,13 @@
 void Twi_end();
 
 void Twi_slave_init(uint8_t slave_addr);
-void Twi_slave_send(uint8_t databyte);
+uint8_t Twi_slave_send(uint8_t databyte);
 uint8_t Twi_receive(void);
 uint8_t Twi_available(void);
 
 void Twi_master_init(void);
 void Twi_master_beginTransmission(uint8_t slave_addr);
-void Twi_master_send(uint8_t data);
+uint8_t Twi_master_send(uint8_t data);
 uint8_t Twi_master_endTransmission();
 unsigned char USI_TWI_Get_State_Info( void );
 uint8_t Twi_master_requestFrom(uint8_t slave_addr, uint8_t numBytes);

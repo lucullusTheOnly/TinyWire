@@ -19,3 +19,4 @@ I hope I've given all people the right credit for their work.
 ## TODO
  * Add PinChange Interrupt Vector, Enable bit and Flag bit in device dependent definitions in twi.h for all other devices than ATTiny25/45/85
  * After an Arbitration Lost, the library has to check, if it was addressed by another master. If so, it has to receive the masters message.
+ * Check compatibility with other clock speeds than 8MHz

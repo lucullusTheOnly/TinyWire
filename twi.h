@@ -130,6 +130,26 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 #  define USI_OVERFLOW_VECTOR USI_OVERFLOW_vect
 #endif
 
+#if defined( __AVR_ATtiny24__ ) | \
+     defined( __AVR_ATtiny44__ ) | \
+     defined( __AVR_ATtiny84__ )
+#  define DDR_USI             DDRA
+#  define PORT_USI            PORTA
+#  define PIN_USI             PINA
+#  define PORT_USI_SDA        PA6
+#  define PORT_USI_SCL        PA4
+#  define PIN_USI_SDA         PINA6
+#  define PIN_USI_SCL         PINA4
+#  define USI_START_COND_INT  USISIF
+#  define USI_START_VECTOR    USI_STR_vect
+#  define USI_OVERFLOW_VECTOR USI_OVF_vect
+#  define PIN_CHANGE_INTERRUPT_ENABLE PCIE0
+#  define PIN_CHANGE_FLAG     PCIF0
+#  define PIN_CHANGE_MASK     PCMSK0
+#  define GENERAL_INTERRUPT_MASK GIMSK
+#  define GENERAL_INTERRUPT_FLAGS GIFR
+#endif
+
 #if defined( __AVR_ATtiny25__ ) | \
      defined( __AVR_ATtiny45__ ) | \
      defined( __AVR_ATtiny85__ )
@@ -145,6 +165,9 @@ void Twi_attachSlaveTxEvent( void (*function)(void) );
 #  define USI_OVERFLOW_VECTOR USI_OVF_vect
 #  define PIN_CHANGE_INTERRUPT_ENABLE PCIE
 #  define PIN_CHANGE_FLAG     PCIF
+#  define PIN_CHANGE_MASK     PCMSK
+#  define GENERAL_INTERRUPT_MASK GIMSK
+#  define GENERAL_INTERRUPT_FLAGS GIFR
 #endif
 
 #if defined( __AVR_ATtiny26__ )

@@ -498,9 +498,9 @@ void Twi_slave_init(uint8_t slave_addr)
           ( 1 << USIDC ) |
           (0x0<< USICNT0);
 
-  GIMSK |= 1 << PIN_CHANGE_INTERRUPT_ENABLE; // enable Pin Change Interrupt
-  GIFR  |= 1 << PIN_CHANGE_FLAG; // clear interrupt flag, by writing 1 to it
-  PCMSK |= 1 << PIN_USI_SDA; // enable pin change interrupt on PCINT0 (SDA line)
+  GENERAL_INTERRUPT_MASK |= 1 << PIN_CHANGE_INTERRUPT_ENABLE; // enable Pin Change Interrupt
+  GENERAL_INTERRUPT_FLAGS  |= 1 << PIN_CHANGE_FLAG; // clear interrupt flag, by writing 1 to it
+  PIN_CHANGE_MASK |= 1 << PIN_USI_SDA; // enable pin change interrupt on PCINT0 (SDA line)
 }
 
 
@@ -555,7 +555,7 @@ void Twi_master_init(void)
 {
   twi_master_mode = true;
 
-  GIMSK &= ~(1 << 5);
+  GIMSK &= ~(1 << PIN_CHANGE_INTERRUPT_ENABLE);
   slaveAddress = 0;
 
   USIDR    =  0xFF;                       // Preload dataregister with "released level" data.

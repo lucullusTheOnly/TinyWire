@@ -5,6 +5,7 @@
 * Date              Saturday, 10/29/17
 * Composed by 		lucullus
 *
+* Modified by Benoit3 on 18/5/2019 to add multibyte send
 *
 *  **** See twi.h for Credits and Usage information ****
 *
@@ -522,6 +523,16 @@ uint8_t Twi_slave_send(uint8_t data)
   return 1;
 }
 
+uint8_t Twi_slave_send(uint8_t *data, uint8_t length)
+{
+  uint8_t count=0;
+  
+  //send byte one by one as long as there's free space in the buffer
+  while ( (count < length) && (Twi_slave_send(data[count])==1)) count++;
+
+  //return count of transmitted bytes
+  return count;
+}
 
 uint8_t Twi_receive(void)
 {
@@ -595,6 +606,17 @@ uint8_t Twi_master_send(uint8_t data)
 	txHead = temphead;
 
   return 1;
+}
+
+uint8_t Twi_master_send(uint8_t *data, uint8_t length)
+{
+  uint8_t count=0;
+  
+  //send byte one by one as long as there's free space in the buffer
+  while ( (count < length) && (Twi_master_send(data[count])==1)) count++;
+
+  //return count of transmitted bytes
+  return count;
 }
 
 uint8_t Twi_master_endTransmission()

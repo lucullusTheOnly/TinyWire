@@ -5,6 +5,7 @@
 * Date              Saturday, 10/29/17
 * Composed by 		lucullus
 *
+* Modified by Benoit3 on 18/5/2019 to add multibyte send
 *
 * Wrapperclass for the new composed TinyWire library for I2C communication on ATTiny's
 * The complete library is based on the librarys TinyWireM and TinyWireS, which were originally posted by
@@ -67,6 +68,7 @@
 		uint8_t receive();
 		uint8_t available();
 		uint8_t send(uint8_t data);
+                uint8_t send(uint8_t *data, uint8_t length);
 		uint8_t write(uint8_t data);
 		void beginTransmission(uint8_t slaveAddr);
 		uint8_t endTransmission();

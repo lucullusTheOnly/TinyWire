@@ -4,7 +4,7 @@
 * File              TinyWire.cpp
 * Date              Saturday, 10/29/17
 * Composed by 		lucullus
-*
+* Modified by Benoit3 on 18/5/2019 to add multibyte send
 *
 *  **** See TinyWire.h for Credits and Usage information ****
 *
@@ -64,6 +64,16 @@
 			return Twi_slave_send(data);
 		}
 	}
+
+  uint8_t TinyTwi::send(uint8_t *data, uint8_t length){
+    if(master_mode || temp_master_mode){
+      //TODO
+      //return Twi_master_send(data,length);
+      return 0;
+    } else{
+      return Twi_slave_send(data,length);
+    }
+  }
 
 	uint8_t TinyTwi::write(uint8_t data){
 		return send(data);

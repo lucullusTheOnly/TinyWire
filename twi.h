@@ -5,6 +5,8 @@
 * Date              Saturday, 10/29/17
 * Composed by 		lucullus
 *
+* Modified by Benoit3 on 18/5/2019 to add multibyte send
+*
 * This library gives the functionality to provide a nearly full I2C communication with both master and slave mode
 * through the USI hardware of an ATTiny (since it has no dedicated hardware for this purpose)
 * The master functionality is done directly (not in an ISR) and in case of a requestFrom blocking. The slave
@@ -37,12 +39,14 @@ void Twi_end();
 
 void Twi_slave_init(uint8_t slave_addr);
 uint8_t Twi_slave_send(uint8_t databyte);
+uint8_t Twi_slave_send(uint8_t *databyte,uint8_t length);
 uint8_t Twi_receive(void);
 uint8_t Twi_available(void);
 
 void Twi_master_init(void);
 void Twi_master_beginTransmission(uint8_t slave_addr);
 uint8_t Twi_master_send(uint8_t data);
+uint8_t Twi_master_send(uint8_t *databyte,uint8_t length);
 uint8_t Twi_master_endTransmission();
 unsigned char USI_TWI_Get_State_Info( void );
 uint8_t Twi_master_requestFrom(uint8_t slave_addr, uint8_t numBytes);

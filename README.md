@@ -1,4 +1,7 @@
 # TinyWire
+
+**Attention: This library is not actively developed at the time. I currently don't have the time digging further into it, though planning to do a complete redesign some day. Multi master support was always buggy, so I cannot recommend using it currently.**
+
 Composite Master and Slave I2C library for Atmels ATTiny microcontrollers
 Class for the new composed TinyWire library for I2C communication on ATTiny's
 The complete library is based on the librarys TinyWireM and TinyWireS, which were originally posted by
